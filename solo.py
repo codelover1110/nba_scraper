@@ -45,7 +45,7 @@ class GameScrap:
     # set up driver
     def configure_driver(self):
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless")
+        options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         self.driver = webdriver.Chrome(options=options)
         self.actions = ActionChains(self.driver)
@@ -78,6 +78,11 @@ def main():
     game_data_detail = []
     home = None
     away = None
+    score = None
+    home_team_points = None
+    away_team_points = None
+    leading_team = None
+    leading_by_points = None
     away_city = None
     home_city = None
     game_date = None
@@ -104,7 +109,24 @@ def main():
         mmmdt = mdt[1].split(" ")
         # print(mmmdt)
         dd = re.findall(r'\d+', mmmdt[2])
-        game_date = str(mmmdt[1])+" "+str(dd[0])+", "+str(mmdt[1])
+        # game_date = str(mmmdt[1])+" "+str(dd[0])+", "+str(mmdt[1])
+        month_to_number = {
+            'January': '01',
+            'February': '02',
+            'March': '03',
+            'April': '04',
+            'May': '05',
+            'June': '06',
+            'July': '07',
+            'August': '08',
+            'September': '09',
+            'October': '10',
+            'November': '11',
+            'December': '12'}
+        if len(dd[0])>1:
+            game_date = str(mmdt[1]) + "-" + month_to_number[mmmdt[1]] + "-" + str(dd[0])
+        else:
+            game_date = str(mmdt[1]) + "-" + month_to_number[mmmdt[1]] + "-0" + str(dd[0])
     except:
         game_date = ''
         print("Date not found")
@@ -159,6 +181,24 @@ def main():
             timeline_data = {}
             is_home_team = quarter.get_attribute('data-is-home-team')
             mytime = quarter.find_elements(By.CLASS_NAME, 'GamePlayByPlayRow_clockElement__LfzHV')
+            try:
+                score = quarter.find_elements(By.CLASS_NAME, 'GamePlayByPlayRow_scoring__Ax2hd')
+                if score:
+                    print("Score", score[0].text)
+                    score_text = score[0].text
+                    score_text = score_text.split("-")
+                    print(score_text)
+                    home_team_points = score_text[1]
+                    away_team_points = score_text[0]
+                    print("home_team_points", home_team_points)
+                    print("away_team_points", away_team_points)
+                    home_team_points = int(home_team_points.strip())
+                    away_team_points = int(away_team_points.strip())
+            except:
+                score = ''
+                home_team_points = None
+                away_team_points = None
+
             description = quarter.find_elements(By.CLASS_NAME, 'GamePlayByPlayRow_desc__XLzrU')
             print(is_home_team, mytime[0].text, description[0].text)
             timeline_data['game_date'] = game_date
@@ -166,18 +206,35 @@ def main():
             timeline_data['game_name'] = game_name
             timeline_data['away_team'] = away_team
             timeline_data['home_team'] = home_team
+            timeline_data['away_team_points'] = away_team_points
+            timeline_data['home_team_points'] = home_team_points
+            if away_team_points != None and home_team_points != None:
+                if away_team_points > home_team_points:
+                    timeline_data['leading_team'] = "Away Team"
+                    timeline_data['leading_by_points'] = away_team_points - home_team_points
+                elif away_team_points < home_team_points:
+                    timeline_data['leading_team'] = "Home Team"
+                    timeline_data['leading_by_points'] = home_team_points - away_team_points
+                else:
+                    timeline_data['leading_team'] = "Tie"
+                    timeline_data['leading_by_points'] = 0
+            else:
+                timeline_data['leading_team'] = ""
+                timeline_data['leading_by_points'] = ""
 
             timeline_data['quarter'] = period
             if is_home_team == 'true':
-                timeline_data['away_play_description'] = ''
-                timeline_data['home_play_description'] = description[0].text
+                timeline_data['play_description'] = description[0].text
+                timeline_data['play_team'] = home_team
 
             else:
-                timeline_data['away_play_description'] = description[0].text
-                timeline_data['home_play_description'] = ''
-
-            timeline_data['game_time '] = mytime[0].text
-
+                timeline_data['play_description'] = description[0].text
+                timeline_data['play_team'] = away_team
+            mtime = str(mytime[0].text)
+            if ':' in mtime:
+                timeline_data['game_time'] = mtime
+            else:
+                timeline_data['game_time'] = "00:"+str(int(float(mtime)))
             data = pd.json_normalize(timeline_data)
 
             table_name = 'nba_solo_details'
