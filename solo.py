@@ -123,7 +123,7 @@ def main():
             'October': '10',
             'November': '11',
             'December': '12'}
-        if len(dd[0])>1:
+        if len(dd[0]) > 1:
             game_date = str(mmdt[1]) + "-" + month_to_number[mmmdt[1]] + "-" + str(dd[0])
         else:
             game_date = str(mmdt[1]) + "-" + month_to_number[mmmdt[1]] + "-0" + str(dd[0])
@@ -206,35 +206,67 @@ def main():
             timeline_data['game_name'] = game_name
             timeline_data['away_team'] = away_team
             timeline_data['home_team'] = home_team
+
+            timeline_data['quarter'] = period
+            mtime = str(mytime[0].text)
+            if ':' in mtime:
+                mtime = mtime.split(":")
+                print("===============>", mtime)
+                if len(mtime[0]) == 2 and len(mtime[1]) == 2:
+                    timeline_data['game_time'] = mtime[0] + ":" + mtime[1]
+                    print("if ===============>", mtime)
+                else:
+                    print("else ===============>", mtime)
+                    hr = None
+                    tr = None
+                    print(mtime[0], len(mtime[0]))
+                    print(mtime[1], len(mtime[1]))
+                    if len(mtime[0]) == 1:
+                        hr = '0' + str(mtime[0])
+                    elif len(mtime[0]) == 2:
+                        hr = str(mtime[0])
+                    elif len(mtime[1]) == 2:
+                        tr = '0' + str(mtime[1])
+                    elif len(mtime[1]) == 2:
+                        tr = str(mtime[1])
+                    print("setting ===========> ", str(hr) + ":" + str(tr))
+                    timeline_data['game_time'] = str(hr) + ":" + str(tr)
+
+            else:
+                if len(str(int(float(mtime)))) == 2:
+                    timeline_data['game_time'] = "00:" + str(int(float(mtime)))
+                elif len(str(int(float(mtime)))) == 1:
+                    timeline_data['game_time'] = "00:0" + str(int(float(mtime)))
+
+            if is_home_team == 'true':
+                timeline_data['play_team'] = home_team
+                timeline_data['play_description'] = description[0].text
+
+
+            else:
+                timeline_data['play_team'] = away_team
+                timeline_data['play_description'] = description[0].text
+
+
             timeline_data['away_team_points'] = away_team_points
             timeline_data['home_team_points'] = home_team_points
-            if away_team_points != None and home_team_points != None:
+            if away_team_points == None and home_team_points == None:
+                timeline_data['away_team_points'] = 0
+                timeline_data['home_team_points'] = 0
+                timeline_data['leading_team'] = 'Tie'
+                timeline_data['leading_by_points'] = 0
+            elif away_team_points != None and home_team_points != None:
                 if away_team_points > home_team_points:
-                    timeline_data['leading_team'] = "Away Team"
+                    timeline_data['leading_team'] = "Away"
                     timeline_data['leading_by_points'] = away_team_points - home_team_points
                 elif away_team_points < home_team_points:
-                    timeline_data['leading_team'] = "Home Team"
+                    timeline_data['leading_team'] = "Home"
                     timeline_data['leading_by_points'] = home_team_points - away_team_points
                 else:
                     timeline_data['leading_team'] = "Tie"
                     timeline_data['leading_by_points'] = 0
-            else:
-                timeline_data['leading_team'] = ""
-                timeline_data['leading_by_points'] = ""
 
-            timeline_data['quarter'] = period
-            if is_home_team == 'true':
-                timeline_data['play_description'] = description[0].text
-                timeline_data['play_team'] = home_team
 
-            else:
-                timeline_data['play_description'] = description[0].text
-                timeline_data['play_team'] = away_team
-            mtime = str(mytime[0].text)
-            if ':' in mtime:
-                timeline_data['game_time'] = mtime
-            else:
-                timeline_data['game_time'] = "00:"+str(int(float(mtime)))
             data = pd.json_normalize(timeline_data)
 
             table_name = 'nba_solo_details'
