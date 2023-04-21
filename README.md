@@ -43,6 +43,35 @@ game_time (pull game time from play_description))
 4. Stores it in db
 ```
 
+# python url.py
+```python
+First, run url.py
+1. urls.py is responsible for extracting urls.
+2. Overall urls.py will extract (gameid, home, away, year, week, url) from the site and store it in DB
+```
+
+# python data.py
+```python
+Second, run data.py
+1. it will take information from stored file (DB/Table) which contains game urls and other information
+2. visit every url
+3. extract all the details like 
+game_date
+game_id
+game_name
+away_team
+home_team
+quarter
+game_time
+play_team
+play_description
+away_team_points
+home_team_points
+leading_team
+leading_by_points
+4. Stores it in db
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first
